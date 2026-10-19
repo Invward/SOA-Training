@@ -9,54 +9,77 @@ import javax.ws.rs.core.Response;
 
 @Path("/ue")
 public class UniteEnsRestApi {
-    UniteEnseignementBusiness helper = new UniteEnseignementBusiness();
+
+    private static final UniteEnseignementBusiness helper = new UniteEnseignementBusiness();
+
     @Path("/getListe")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getListe(){
-        return Response.status(200).entity(helper.getListeUE()).build();
+    public Response getListe() {
+        return Response.ok(helper.getListeUE()).build();
     }
 
     @Path("/getById/{id}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getById(@PathParam("id") int id){
-        return Response.status(200).entity(helper.getUEByCode(id)).build();
+    public Response getById(@PathParam("id") int id) {
+        UniteEnseignement ue = helper.getUEByCode(id);
+        if (ue == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Aucune UE avec le code " + id).build();
+        }
+        return Response.ok(ue).build();
     }
 
     @Path("/getByDomaine/{domaine}")
     @GET
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response getByDomaine(@PathParam("domaine") String domaine){
-        return Response.status(200).entity(helper.getUEByDomaine(domaine)).build();
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getByDomaine(@PathParam("domaine") String domaine) {
+        return Response.ok(helper.getUEByDomaine(domaine)).build();
+    }
+
+    @Path("/getBySemestre/{semestre}")
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getBySemestre(@PathParam("semestre") int semestre) {
+        return Response.ok(helper.getUEBySemestre(semestre)).build();
     }
 
     @Path("/addEns")
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response addUE(@QueryParam("ue") UniteEnseignement ue){
-        return Response.status(201).entity(helper.addUniteEnseignement(ue)).build();
-    }
-
-    @Path("/getBySemestre/{smemestre}")
-    @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getBySemestre(@PathParam("smemestre") int smemestre){
-        return Response.status(200).entity(helper.getUEBySemestre(smemestre)).build();
+    public Response addUE(UniteEnseignement ue) {
+        if (ue == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Corps JSON manquant ou invalide").build();
+        }
+        helper.addUniteEnseignement(ue);
+        return Response.status(Response.Status.CREATED).entity(ue).build();
     }
 
-    @Path("/DeleteEns")
-    @DELETE
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteUE(@QueryParam("id") int id){
-        return Response.status(203).entity(helper.deleteUniteEnseignement(id)).build();
-    }
-
-    @Path("/updateEns")
+    @Path("/updateEns/{code}")
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response updateUE(@QueryParam("ue") UniteEnseignement ue,@QueryParam("code") int code){
-        return  Response.status(202).entity(helper.updateUniteEnseignement(code,ue)).build();
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updateUE(@PathParam("code") int code, UniteEnseignement ue) {
+        ue.setCode(code);
+        boolean updated = helper.updateUniteEnseignement(code, ue);
+        if (!updated) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Aucune UE avec le code " + code).build();
+        }
+        return Response.ok(ue).build();
     }
 
+    @Path("/deleteEns/{id}")
+    @DELETE
+    public Response deleteUE(@PathParam("id") int id) {
+        boolean deleted = helper.deleteUniteEnseignement(id);
+        if (!deleted) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Aucune UE avec le code " + id).build();
+        }
+        return Response.noContent().build();
+    }
 }
